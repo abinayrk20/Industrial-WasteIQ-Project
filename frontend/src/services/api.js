@@ -1,0 +1,141 @@
+import axios from 'axios';
+
+const API_BASE_URL = '/api';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor to inject JWT Bearer Token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor to handle expired tokens and security denials
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.clear();
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ----------------- AUTH APIS -----------------
+export const authApi = {
+  login: async (email, password) => {
+    const response = await api.post('/auth/login/', { email, password });
+    return response.data;
+  },
+  getCurrentUser: async () => {
+    const response = await api.get('/auth/me/');
+    return response.data;
+  },
+};
+
+// ----------------- ADMIN APIS -----------------
+export const adminApi = {
+  getDashboard: async () => {
+    const res = await api.get('/admin/dashboard/');
+    return res.data;
+  },
+  getOperators: async () => {
+    const res = await api.get('/admin/operators/');
+    return res.data;
+  },
+  createOperator: async (operatorData) => {
+    const res = await api.post('/admin/operators/', operatorData);
+    return res.data;
+  },
+  updateOperator: async (id, data) => {
+    const res = await api.patch(`/admin/operators/${id}/`, data);
+    return res.data;
+  },
+  getProjects: async () => {
+    const res = await api.get('/admin/projects/');
+    return res.data;
+  },
+  createProject: async (projectData) => {
+    const res = await api.post('/admin/projects/', projectData);
+    return res.data;
+  },
+  updateProject: async (id, data) => {
+    const res = await api.patch(`/admin/projects/${id}/`, data);
+    return res.data;
+  },
+  approveActivity: async (id, action, remarks = '') => {
+    const res = await api.post(`/admin/activities/${id}/approve/`, { action, remarks });
+    return res.data;
+  },
+  getAuditLogs: async () => {
+    const res = await api.get('/admin/audit-logs/');
+    return res.data;
+  },
+};
+
+// ----------------- OPERATOR APIS -----------------
+export const operatorApi = {
+  getDashboard: async () => {
+    const res = await api.get('/operator/dashboard/');
+    return res.data;
+  },
+  getTasks: async () => {
+    const res = await api.get('/operator/tasks/');
+    return res.data;
+  },
+  updateTaskStatus: async (taskId, status) => {
+    const res = await api.patch(`/operator/tasks/${taskId}/status/`, { status });
+    return res.data;
+  },
+  getRecords: async () => {
+    const res = await api.get('/operator/records/');
+    return res.data;
+  },
+  submitRecord: async (recordData) => {
+    const res = await api.post('/operator/records/', recordData);
+    return res.data;
+  },
+};
+
+// ----------------- CLIENT VIEWER APIS (READ-ONLY) -----------------
+export const clientApi = {
+  getDashboard: async () => {
+    const res = await api.get('/client/dashboard/');
+    return res.data;
+  },
+  getReports: async () => {
+    const res = await api.get('/client/reports/');
+    return res.data;
+  },
+  getDocuments: async () => {
+    const res = await api.get('/client/documents/');
+    return res.data;
+  },
+};
+
+// ----------------- SECURITY LOGGING API -----------------
+export const securityApi = {
+  logAccessDenied: async (attemptedPath) => {
+    try {
+      await api.post('/security/log-access-denied/', { attempted_path: attemptedPath });
+    } catch (e) {
+      // Best effort log
+    }
+  },
+};
+
+export default api;

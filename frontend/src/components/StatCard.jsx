@@ -4,37 +4,37 @@ const StatCard = ({ title, value, unit = '', icon: Icon, color = 'emerald', subt
   const colorThemes = {
     emerald: {
       accent: 'border-t-emerald-500',
-      icon: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+      icon: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
     },
     blue: {
-      accent: 'border-t-blue-500',
-      icon: 'bg-blue-50 text-blue-600 border-blue-200',
+      accent: 'border-t-cyan-500',
+      icon: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
     },
     indigo: {
       accent: 'border-t-indigo-500',
-      icon: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+      icon: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
     },
     amber: {
       accent: 'border-t-amber-500',
-      icon: 'bg-amber-50 text-amber-600 border-amber-200',
+      icon: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     },
     rose: {
       accent: 'border-t-rose-500',
-      icon: 'bg-rose-50 text-rose-600 border-rose-200',
+      icon: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
     },
   };
 
   const theme = colorThemes[color] || colorThemes.emerald;
 
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200/90 border-t-2 ${theme.accent} p-5 shadow-xs hover:shadow-md transition-all group`}>
+    <div className={`bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800/90 border-t-2 ${theme.accent} p-5 shadow-xl hover:border-slate-700 transition-all group`}>
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1">
             {title}
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+            <span className="text-2xl font-black text-white tracking-tight font-mono">
               {value}
             </span>
             {unit && <span className="text-xs font-semibold text-slate-400">{unit}</span>}
@@ -47,7 +47,7 @@ const StatCard = ({ title, value, unit = '', icon: Icon, color = 'emerald', subt
         )}
       </div>
       {subtitle && (
-        <div className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-500">
+        <div className="mt-3 pt-2 border-t border-slate-800/80 text-[11px] font-medium text-slate-400">
           {subtitle}
         </div>
       )}

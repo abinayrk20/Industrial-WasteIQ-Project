@@ -69,6 +69,18 @@ npm run dev -- --host 127.0.0.1 --port 5173
 - **Frontend Portal**: `http://127.0.0.1:5173/`
 - **Backend API**: `http://127.0.0.1:8000/api/`
 
+### Deploying the frontend to Vercel
+
+For this repository layout, set Vercel's **Root Directory** to
+`Industrial-Project-Management/frontend`, with the build command `npm run build`
+and output directory `dist`. The `frontend/vercel.json` rewrite sends direct
+requests for client-side routes back to `index.html`, where React Router can
+render the requested page.
+
+Vercel deploys this frontend separately from Django. The frontend currently
+requests the API at `/api`, so deploy/configure the Django backend at that same
+origin or provide a proxy to it; the SPA rewrite is not an API deployment.
+
 ---
 
 ## 🧪 Automated RBAC Test Suite

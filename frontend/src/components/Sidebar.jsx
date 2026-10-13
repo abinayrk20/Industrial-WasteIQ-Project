@@ -10,12 +10,12 @@ import {
   CheckSquare,
   ClipboardList,
   FolderLock,
+  FileCheck,
   ShieldCheck,
   HardHat,
   Eye,
-  Lock,
-  Layers,
-  FileCheck
+  Activity,
+  Download
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -27,7 +27,7 @@ const Sidebar = () => {
     { name: 'Operator Management', path: '/admin/operators', icon: Users },
     { name: 'Projects & Sites', path: '/admin/projects', icon: Briefcase },
     { name: 'Approvals & Reports', path: '/admin/reports', icon: FileCheck },
-    { name: 'System Settings & Security', path: '/admin/settings', icon: Settings },
+    { name: 'System Settings & Logs', path: '/admin/settings', icon: Settings },
   ];
 
   const operatorNav = [
@@ -46,17 +46,22 @@ const Sidebar = () => {
   const currentNav = role === 'ADMIN' ? adminNav : role === 'OPERATOR' ? operatorNav : clientNav;
 
   return (
-    <aside className="w-64 bg-slate-950 text-slate-300 min-h-[calc(100vh-61px)] flex flex-col justify-between p-4 border-r border-slate-800 shadow-inner">
+    <aside className="w-64 bg-slate-950 text-slate-300 min-h-[calc(100vh-61px)] flex flex-col justify-between p-4 border-r border-slate-800/90 shadow-2xl font-['Plus_Jakarta_Sans',sans-serif]">
       <div>
-        <div className="px-3 py-2 mb-4">
-          <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400 block">
-            {role === 'ADMIN' ? 'Tier-1 Administration' : role === 'OPERATOR' ? 'Field Operational Terminal' : 'Client Access Portal'}
-          </span>
-          <p className="text-xs font-bold text-white mt-0.5">
-            {role === 'ADMIN' ? 'Executive Control Hub' : role === 'OPERATOR' ? 'Shift Workstation' : 'Verified Read-Only View'}
+        {/* Clearance Header */}
+        <div className="px-3.5 py-3 mb-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
+              {role === 'ADMIN' ? 'Tier-1 Executive' : role === 'OPERATOR' ? 'Field Station' : 'Stakeholder'}
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <p className="text-xs font-extrabold text-white mt-1">
+            {role === 'ADMIN' ? 'Master Control Hub' : role === 'OPERATOR' ? 'Operator Terminal' : 'View-Only Console'}
           </p>
         </div>
 
+        {/* Navigation Links */}
         <nav className="space-y-1.5">
           {currentNav.map((item) => {
             const Icon = item.icon;
@@ -67,18 +72,19 @@ const Sidebar = () => {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
                     isActive
-                      ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-400 border border-emerald-500/30 shadow-xs'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
+                      ? 'bg-gradient-to-r from-emerald-500/20 via-teal-500/10 to-transparent text-emerald-300 border border-emerald-500/30 shadow-md shadow-emerald-950/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900/80 border border-transparent'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
-                    <span>{item.name}</span>
-                    {isActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-auto shadow-sm shadow-emerald-400"></span>
-                    )}
+                    <Icon
+                      className={`w-4 h-4 transition-colors ${
+                        isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    <span className="truncate">{item.name}</span>
                   </>
                 )}
               </NavLink>
@@ -87,24 +93,22 @@ const Sidebar = () => {
         </nav>
       </div>
 
-      {/* Security Status Box */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3.5">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
-            <Lock className="w-3.5 h-3.5 text-emerald-400" />
-            <span>RBAC Enforced</span>
-          </div>
-          <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            {role === 'ADMIN' ? 'LVL 3' : role === 'OPERATOR' ? 'LVL 2' : 'LVL 1 (RO)'}
-          </span>
+      {/* Bottom Telemetry & Download Card */}
+      <div className="mt-6 pt-4 border-t border-slate-800/80 space-y-3">
+        <a
+          href="https://github.com/abinayrk20/Industrial-WasteIQ-Project/archive/refs/heads/main.zip"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors shadow-xs"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download Project ZIP</span>
+        </a>
+
+        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 px-1">
+          <span>WASTE-IQ PROTOCOL</span>
+          <span className="text-emerald-400">ONLINE</span>
         </div>
-        <p className="text-[11px] text-slate-400 leading-relaxed">
-          {role === 'ADMIN'
-            ? 'Full CRUD, user management, and approval authority.'
-            : role === 'OPERATOR'
-            ? 'Scoped strictly to assigned tasks and personal activity entries.'
-            : 'Strictly read-only access. Write mutations prohibited.'}
-        </p>
       </div>
     </aside>
   );

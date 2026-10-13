@@ -29,7 +29,21 @@ function App() {
   const { user, getDashboardPath } = useAuth();
 
   return (
-    <Routes>
+    <div className="relative min-h-screen bg-[#080d1a] text-slate-100 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Global Cinematic Industrial Refinery Ambient Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <img
+          src="/industrial-refinery.jpg"
+          alt="Waste-IQ Industrial Refinery Complex"
+          className="w-full h-full object-cover object-center filter brightness-[0.25] contrast-125"
+        />
+        {/* Dark Obsidian Gradient Vignette for perfect text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#080d1a]/85 via-[#080d1a]/80 to-[#080d1a]/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:32px_32px] opacity-10" />
+      </div>
+
+      <div className="relative z-10 min-h-screen">
+        <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/access-denied" element={<AccessDenied />} />
@@ -147,6 +161,8 @@ function App() {
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+      </div>
+    </div>
   );
 }
 

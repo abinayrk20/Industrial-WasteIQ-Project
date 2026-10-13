@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, ArrowLeft, Lock, ShieldCheck, AlertOctagon } from 'lucide-react';
+import WasteIQLogo from '../components/WasteIQLogo';
 
 const AccessDenied = () => {
   const location = useLocation();
@@ -34,6 +35,9 @@ const AccessDenied = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="max-w-md w-full bg-slate-900/90 border border-rose-500/30 rounded-3xl p-8 backdrop-blur-xl shadow-2xl text-center relative z-10">
+        <div className="flex justify-center mb-5">
+          <WasteIQLogo size="sm" />
+        </div>
         <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-rose-950">
           <ShieldAlert className="w-8 h-8 animate-pulse" />
         </div>

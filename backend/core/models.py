@@ -17,6 +17,9 @@ class User(AbstractUser):
 
     name = models.CharField(max_length=150, blank=True)
     email = models.EmailField(unique=True)
+    age = models.PositiveIntegerField(null=True, blank=True)
+    designation = models.CharField(max_length=150, blank=True)
+    employee_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OPERATOR')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
     created_at = models.DateTimeField(auto_now_add=True)

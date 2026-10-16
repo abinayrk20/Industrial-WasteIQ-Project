@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// Render backend URL from .env; local development uses Vite proxy
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// Interceptor to inject JWT Bearer Token
+// Add JWT token to requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -21,12 +22,16 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor to handle expired tokens and security denials
+// Handle unauthorized requests
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.clear();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user_profile');
+      localStorage.removeItem('user_role');
+
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -35,7 +40,7 @@ api.interceptors.response.use(
   }
 );
 
-// ----------------- AUTH APIS -----------------
+// AUTH APIS
 export const authApi = {
   login: async (email, password) => {
     const response = await api.post('/auth/login/', { email, password });
@@ -47,93 +52,46 @@ export const authApi = {
   },
 };
 
-// ----------------- ADMIN APIS -----------------
+// ADMIN APIS
 export const adminApi = {
-  getDashboard: async () => {
-    const res = await api.get('/admin/dashboard/');
-    return res.data;
-  },
-  getOperators: async () => {
-    const res = await api.get('/admin/operators/');
-    return res.data;
-  },
-  createOperator: async (operatorData) => {
-    const res = await api.post('/admin/operators/', operatorData);
-    return res.data;
-  },
-  updateOperator: async (id, data) => {
-    const res = await api.patch(`/admin/operators/${id}/`, data);
-    return res.data;
-  },
-  getProjects: async () => {
-    const res = await api.get('/admin/projects/');
-    return res.data;
-  },
-  createProject: async (projectData) => {
-    const res = await api.post('/admin/projects/', projectData);
-    return res.data;
-  },
-  updateProject: async (id, data) => {
-    const res = await api.patch(`/admin/projects/${id}/`, data);
-    return res.data;
-  },
-  approveActivity: async (id, action, remarks = '') => {
-    const res = await api.post(`/admin/activities/${id}/approve/`, { action, remarks });
-    return res.data;
-  },
-  getAuditLogs: async () => {
-    const res = await api.get('/admin/audit-logs/');
-    return res.data;
-  },
+  getDashboard: async () => (await api.get('/admin/dashboard/')).data,
+  getOperators: async () => (await api.get('/admin/operators/')).data,
+  createOperator: async (data) => (await api.post('/admin/operators/', data)).data,
+  updateOperator: async (id, data) => (await api.patch(`/admin/operators/${id}/`, data)).data,
+  getProjects: async () => (await api.get('/admin/projects/')).data,
+  createProject: async (data) => (await api.post('/admin/projects/', data)).data,
+  updateProject: async (id, data) => (await api.patch(`/admin/projects/${id}/`, data)).data,
+  approveActivity: async (id, action, remarks = '') =>
+    (await api.post(`/admin/activities/${id}/approve/`, { action, remarks })).data,
+  getAuditLogs: async () => (await api.get('/admin/audit-logs/')).data,
 };
 
-// ----------------- OPERATOR APIS -----------------
+// OPERATOR APIS
 export const operatorApi = {
-  getDashboard: async () => {
-    const res = await api.get('/operator/dashboard/');
-    return res.data;
-  },
-  getTasks: async () => {
-    const res = await api.get('/operator/tasks/');
-    return res.data;
-  },
-  updateTaskStatus: async (taskId, status) => {
-    const res = await api.patch(`/operator/tasks/${taskId}/status/`, { status });
-    return res.data;
-  },
-  getRecords: async () => {
-    const res = await api.get('/operator/records/');
-    return res.data;
-  },
-  submitRecord: async (recordData) => {
-    const res = await api.post('/operator/records/', recordData);
-    return res.data;
-  },
+  getDashboard: async () => (await api.get('/operator/dashboard/')).data,
+  getTasks: async () => (await api.get('/operator/tasks/')).data,
+  updateTaskStatus: async (taskId, status) =>
+    (await api.patch(`/operator/tasks/${taskId}/status/`, { status })).data,
+  getRecords: async () => (await api.get('/operator/records/')).data,
+  submitRecord: async (data) => (await api.post('/operator/records/', data)).data,
 };
 
-// ----------------- CLIENT VIEWER APIS (READ-ONLY) -----------------
+// CLIENT APIS (READ-ONLY)
 export const clientApi = {
-  getDashboard: async () => {
-    const res = await api.get('/client/dashboard/');
-    return res.data;
-  },
-  getReports: async () => {
-    const res = await api.get('/client/reports/');
-    return res.data;
-  },
-  getDocuments: async () => {
-    const res = await api.get('/client/documents/');
-    return res.data;
-  },
+  getDashboard: async () => (await api.get('/client/dashboard/')).data,
+  getReports: async () => (await api.get('/client/reports/')).data,
+  getDocuments: async () => (await api.get('/client/documents/')).data,
 };
 
-// ----------------- SECURITY LOGGING API -----------------
+// SECURITY LOGGING API
 export const securityApi = {
   logAccessDenied: async (attemptedPath) => {
     try {
-      await api.post('/security/log-access-denied/', { attempted_path: attemptedPath });
-    } catch (e) {
-      // Best effort log
+      await api.post('/security/log-access-denied/', {
+        attempted_path: attemptedPath,
+      });
+    } catch (error) {
+      // Best-effort logging
     }
   },
 };

@@ -53,11 +53,26 @@ The database has been pre-seeded with active operational data:
 cd backend
 python -m venv venv
 venv\Scripts\activate
-pip install django djangorestframework djangorestframework-simplejwt django-cors-headers
+pip install -r requirements.txt
 python manage.py migrate
 python seed_data.py   # Seeds users, operators, projects, tasks, audit logs
 python manage.py runserver 127.0.0.1:8000
 ```
+
+### Connecting the backend to Supabase
+
+The Django backend connects to the Supabase **PostgreSQL database** using its
+database connection URI, not the frontend's Supabase publishable key. In the
+Supabase dashboard, copy the database URI from **Connect**, then set it as
+`DATABASE_URL` in `backend/.env` for local development or in the backend
+hosting provider's environment variables for deployment. Use a direct or
+session-pooler URI supported by your hosting network; the backend requires SSL.
+Keep the database password private and do not commit `.env`.
+
+When `DATABASE_URL` is configured, run `python manage.py migrate` from
+`backend` to create the Django tables in Supabase. To populate a new database
+with the demo users and sample data, run `python seed_data.py` once. Without
+`DATABASE_URL`, local development continues to use `backend/db.sqlite3`.
 
 ### Frontend (React + Vite + Tailwind CSS + Lucide Icons + Recharts)
 ```bash

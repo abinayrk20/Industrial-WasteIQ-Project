@@ -3,324 +3,696 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import WasteIQLogo from '../components/WasteIQLogo';
 import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
   ShieldCheck,
   HardHat,
-  Eye,
-  Lock,
-  Mail,
-  AlertCircle,
-  ArrowRight,
-  ShieldAlert,
-  Cpu,
-  Activity,
-  Layers,
-  Recycle,
+  Eye as ClientEye,
+  KeyRound,
+  UserPlus,
+  X,
   Sparkles,
-  CheckCircle2
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, getDashboardPath } = useAuth();
+  const { login, register, forgotPassword, getDashboardPath } = useAuth();
 
-  const [email, setEmail] = useState('admin@industrial.com');
-  const [password, setPassword] = useState('Admin@12345');
+  // Login Form States
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
+  // Modals
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showDemoDrawer, setShowDemoDrawer] = useState(false);
+
+  // Register Form States
+  const [regFullName, setRegFullName] = useState('');
+  const [regUserId, setRegUserId] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regRole, setRegRole] = useState('OPERATOR');
+  const [regDepartment, setRegDepartment] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState('');
+
+  // Forgot Password Form States
+  const [forgotUserId, setForgotUserId] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+
+  // Demo Accounts Quick Reference
   const demoAccounts = [
     {
       role: 'ADMIN',
       title: 'Administrator',
-      email: 'admin@industrial.com',
+      userId: 'admin',
       password: 'Admin@12345',
       icon: ShieldCheck,
-      badge: 'Level 3 Master',
-      color: 'border-indigo-500/50 text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20',
-      activeRing: 'ring-2 ring-indigo-500',
+      badge: 'Level 3 Governance',
+      color: 'border-indigo-500/40 text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20',
     },
     {
       role: 'OPERATOR',
-      title: 'David Chen',
-      email: 'operator01@industrial.com',
+      title: 'Abinaya',
+      userId: 'operator04',
       password: 'Operator@12345',
       icon: HardHat,
-      badge: 'IND-OP-0001',
-      color: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20',
-      activeRing: 'ring-2 ring-emerald-500',
+      badge: 'IND-OP-0004 Certified',
+      color: 'border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20',
     },
     {
       role: 'CLIENT_VIEWER',
       title: 'Client Stakeholder',
-      email: 'client@industrial.com',
+      userId: 'client',
       password: 'Client@12345',
-      icon: Eye,
-      badge: 'Level 1 View-Only',
-      color: 'border-sky-500/50 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20',
-      activeRing: 'ring-2 ring-sky-500',
+      icon: ClientEye,
+      badge: 'View-Only Audits',
+      color: 'border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20',
     },
   ];
 
-  const handleSelectDemo = (acc) => {
-    setEmail(acc.email);
-    setPassword(acc.password);
-    setError('');
-  };
-
-  const handleSubmit = async (e) => {
+  // Handle Login Submit
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    if (!userId.trim()) {
+      setError('Please enter your User ID or Email.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your Password.');
+      return;
+    }
+
     setLoading(true);
     setError('');
+    setSuccessMsg('');
 
     try {
-      const user = await login(email, password);
-      const redirect = getDashboardPath(user.role);
-      navigate(redirect);
+      const user = await login(userId.trim(), password);
+      const redirectPath = getDashboardPath(user.role);
+      navigate(redirectPath);
     } catch (err) {
       setError(
         err.response?.data?.detail ||
         err.response?.data?.non_field_errors?.[0] ||
-        'Authentication failed. Please verify corporate email and password.'
+        'Authentication failed. Invalid User ID or Password. Please check your credentials.'
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle User Registration
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setRegError('');
+
+    if (!regFullName.trim() || !regUserId.trim() || !regEmail.trim()) {
+      setRegError('All fields are required.');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setRegError('Password must be at least 6 characters.');
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setRegError('Passwords do not match.');
+      return;
+    }
+
+    setRegLoading(true);
+    try {
+      await register({
+        user_id: regUserId.trim(),
+        name: regFullName.trim(),
+        email: regEmail.trim(),
+        password: regPassword,
+        role: regRole,
+        department: regDepartment.trim() || 'Waste-IQ Operations'
+      });
+
+      // Populate login User ID and close modal
+      setUserId(regUserId.trim());
+      setPassword('');
+      setShowRegisterModal(false);
+      setSuccessMsg(`Registration successful! User ID "${regUserId}" is ready. Enter your password to log in.`);
+      setError('');
+
+      // Reset reg form
+      setRegFullName('');
+      setRegUserId('');
+      setRegEmail('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+      setRegDepartment('');
+    } catch (err) {
+      const msg = err.response?.data?.user_id?.[0] ||
+        err.response?.data?.email?.[0] ||
+        err.response?.data?.detail ||
+        'Registration failed. Please check inputs and try again.';
+      setRegError(msg);
+    } finally {
+      setRegLoading(false);
+    }
+  };
+
+  // Handle Forgot Password Reset
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+
+    if (!forgotUserId.trim()) {
+      setForgotError('Please enter your User ID or registered Email.');
+      return;
+    }
+    if (forgotNewPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters.');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('New passwords do not match.');
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      await forgotPassword(forgotUserId.trim(), forgotNewPassword);
+
+      setUserId(forgotUserId.trim());
+      setPassword('');
+      setShowForgotModal(false);
+      setSuccessMsg('Password updated successfully! Please log in with your new password.');
+      setError('');
+
+      setForgotUserId('');
+      setForgotNewPassword('');
+      setForgotConfirmPassword('');
+    } catch (err) {
+      const msg = err.response?.data?.user_id?.[0] ||
+        err.response?.data?.detail ||
+        'Password reset failed. Verify your User ID / Email.';
+      setForgotError(msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // Quick fill from demo account
+  const handleSelectDemo = (acc) => {
+    setUserId(acc.userId);
+    setPassword(acc.password);
+    setError('');
+    setSuccessMsg('');
+  };
+
   return (
-    <div className="min-h-screen bg-[#080d1a] text-slate-100 flex items-center justify-center relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Background Industrial Image with Gradient Vignette */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src="/industrial-refinery.png"
-          alt="Industrial Refinery Plant"
-          className="w-full h-full object-cover object-center filter brightness-[0.45] contrast-125 scale-105 transform motion-safe:transition-transform duration-1000"
-        />
-        {/* Cinematic Dual Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080d1a] via-[#080d1a]/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080d1a] via-[#080d1a]/75 to-[#080d1a]/95" />
-        {/* Atmospheric Glow Highlights */}
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      </div>
+    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#030806] overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* 1. 3D Crystal Recycling Hero Background from Reference Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+        style={{ backgroundImage: "url('/industrial-wasteiq-hero.jpg')" }}
+      />
+      {/* Dark Obsidian Glass Vignette */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#030806]/90 via-[#030806]/85 to-[#030806]/95 backdrop-blur-md" />
+      {/* Ambient Neon Radial Gradient Mesh */}
+      <div className="absolute inset-0 bg-[radial-gradient(#39FF78_1px,transparent_1px)] [background-size:32px_32px] opacity-15 pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-[#39FF78]/10 via-[#00A86B]/5 to-transparent blur-3xl pointer-events-none" />
 
-      {/* Main Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      {/* 2. Main Center Login Card */}
+      <div className="relative z-10 w-full max-w-md bg-[#0B1210]/90 backdrop-blur-2xl border border-[#39FF78]/25 hover:border-[#39FF78]/50 transition-all rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/90">
+        
+        {/* Branding Header */}
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-3">
+            <WasteIQLogo size="lg" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center justify-center gap-2">
+            <span>Waste-IQ</span>
+            <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold tracking-wide">
+              RBAC v2.4
+            </span>
+          </h1>
+          <p className="mt-1 text-xs text-slate-400 font-medium">
+            Industrial Waste Management & Operations Platform
+          </p>
+        </div>
 
-          {/* LEFT COLUMN: Industrial Brand Showcase & Telemetry */}
-          <div className="lg:col-span-7 space-y-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-4 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2.5 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{error}</span>
+          </div>
+        )}
 
-            {/* Live Facility Telemetry Pill */}
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/40 backdrop-blur-md text-emerald-400 text-xs font-mono font-semibold shadow-lg shadow-emerald-950/40">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>FACILITY TELEMETRY: REFINERY UNIT 04 ONLINE</span>
-              <span className="text-slate-500">|</span>
-              <span className="text-amber-400">AI CORE ACTIVE</span>
+        {/* Success Alert */}
+        {successMsg && (
+          <div className="mb-4 bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs rounded-xl p-3 flex items-start gap-2.5 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{successMsg}</span>
+          </div>
+        )}
+
+        {/* 3. Login Form: Strictly User ID and Password */}
+        <form onSubmit={handleLoginSubmit} className="space-y-4">
+          
+          {/* Field 1: User ID */}
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>User ID</span>
+              <span className="text-[10px] text-slate-500 lowercase font-normal font-mono">
+                username or email
+              </span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <User className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                required
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="Enter User ID or Email"
+                className="block w-full pl-10 pr-3 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
+              />
             </div>
-
-            {/* Waste-IQ Main Logo & Branding */}
-            <div>
-              <WasteIQLogo size="xl" />
-              <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                AI Industrial Waste <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-400">
-                  Classification & Operations
-                </span>
-              </h1>
-              <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
-                Autonomous real-time classification of industrial byproducts into <strong className="text-emerald-300">Recyclable</strong>, <strong className="text-amber-300">Reusable</strong>, and <strong className="text-rose-300">Hazardous</strong> streams, powered by machine learning and strict 3-tier Role-Based Access Control.
-              </p>
-            </div>
-
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2 border border-emerald-500/30">
-                  <Recycle className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">ML Classification</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Random Forest inference on hazard, moisture & heat metrics</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-2 border border-amber-500/30">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Strict RBAC</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Admin CRUD, unique Operator badges & Client view-only isolation</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
-                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-2 border border-cyan-500/30">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Audit Registry</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Immutable audit logging on every production entry & login</p>
-              </div>
-            </div>
-
-            {/* Live Metrics Ticker */}
-            <div className="flex flex-wrap items-center gap-6 pt-2 text-xs font-mono text-slate-400 border-t border-slate-800/80">
-              <div>
-                <span className="text-slate-500 block text-[10px]">INFERENCE ACCURACY</span>
-                <span className="text-emerald-400 font-bold text-sm">99.4% Verified</span>
-              </div>
-              <div className="h-6 w-px bg-slate-800" />
-              <div>
-                <span className="text-slate-500 block text-[10px]">CERTIFIED BADGES</span>
-                <span className="text-amber-400 font-bold text-sm">IND-OP Series</span>
-              </div>
-              <div className="h-6 w-px bg-slate-800" />
-              <div>
-                <span className="text-slate-500 block text-[10px]">SECURITY LEVEL</span>
-                <span className="text-cyan-400 font-bold text-sm">Zero Breach Standard</span>
-              </div>
-            </div>
-
           </div>
 
-          {/* RIGHT COLUMN: Glassmorphic Secure Clearance Terminal */}
-          <div className="lg:col-span-5">
-            <div className="relative rounded-3xl bg-slate-900/85 backdrop-blur-2xl border border-slate-700/80 p-6 sm:p-8 shadow-2xl shadow-black/80">
+          {/* Field 2: Password */}
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="block w-full pl-10 pr-10 py-3 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                tabIndex="-1"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
 
-              {/* Subtle Ambient Card Top Border Glow */}
-              <div className="absolute top-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+          {/* Options: Left -> "Forgot Password?", Right -> "New User? Sign Up" */}
+          <div className="flex items-center justify-between text-xs pt-1 pb-1">
+            <button
+              type="button"
+              onClick={() => {
+                setForgotUserId(userId);
+                setForgotError('');
+                setShowForgotModal(true);
+              }}
+              className="text-slate-400 hover:text-emerald-400 transition-colors font-medium flex items-center gap-1 group"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+              <span>Forgot Password?</span>
+            </button>
 
-              {/* Terminal Header */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-emerald-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    AUTHORIZED ACCESS GATEWAY
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                    RBAC v2.4
-                  </span>
+            <button
+              type="button"
+              onClick={() => {
+                setRegError('');
+                setShowRegisterModal(true);
+              }}
+              className="text-emerald-400 hover:text-emerald-300 transition-colors font-semibold flex items-center gap-1 group"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+              <span>New User? Sign Up</span>
+            </button>
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 hover:from-emerald-500 hover:via-teal-400 hover:to-emerald-500 active:scale-[0.99] shadow-lg shadow-emerald-950/70 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <span>Login</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* 4. Collapsible Demo Credentials Helper */}
+        <div className="mt-6 pt-4 border-t border-slate-800/80">
+          <button
+            type="button"
+            onClick={() => setShowDemoDrawer(!showDemoDrawer)}
+            className="w-full flex items-center justify-between text-[11px] font-mono text-slate-400 hover:text-slate-300 transition-colors p-1"
+          >
+            <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-slate-400">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              Demo Accounts (Click to Fill)
+            </span>
+            {showDemoDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {showDemoDrawer && (
+            <div className="grid grid-cols-3 gap-2 mt-3 animate-fadeIn">
+              {demoAccounts.map((acc) => {
+                const Icon = acc.icon;
+                const isSelected = userId === acc.userId;
+                return (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => handleSelectDemo(acc)}
+                    className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? `${acc.color} ring-1 ring-emerald-500/60 shadow-md`
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 mb-1" />
+                    <span className="text-[11px] font-bold block leading-tight text-white">{acc.title}</span>
+                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">{acc.userId}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 5. NEW USER SIGN UP MODAL */}
+      {/* ========================================================================= */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/40 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <UserPlus className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-extrabold text-white">Sign In to Your Station</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Select a clearance credential or enter corporate login.
-                </p>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Create New Account</h3>
+                  <p className="text-xs text-slate-400">Waste-IQ Industrial Registration</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRegisterModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {regError && (
+              <div className="mb-4 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{regError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              
+              {/* Full Name & User ID */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
+                    placeholder="e.g. Abinaya R"
+                    className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                    User ID (Username) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regUserId}
+                    onChange={(e) => setRegUserId(e.target.value)}
+                    placeholder="e.g. abinaya20"
+                    className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
               </div>
 
-              {/* Error Alert */}
-              {error && (
-                <div className="mb-5 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl p-3 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  <span>{error}</span>
-                </div>
-              )}
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  Corporate Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="e.g. abinaya@wasteiq.com"
+                  className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+              </div>
 
-              {/* 1-Click Role Clearance Selectors */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                    1-Click Role Clearance Demo:
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Auto-Fills Form</span>
+              {/* Password & Confirm Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                    Confirm Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {demoAccounts.map((acc) => {
-                    const Icon = acc.icon;
-                    const isSelected = email === acc.email;
+              {/* Role Selection */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Select System Role *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'OPERATOR', label: 'Operator', desc: 'Plant & Site Work', icon: HardHat },
+                    { id: 'ADMIN', label: 'Admin', desc: 'Full Governance', icon: ShieldCheck },
+                    { id: 'CLIENT_VIEWER', label: 'Client', desc: 'View-Only Audits', icon: ClientEye },
+                  ].map((r) => {
+                    const Icon = r.icon;
+                    const isChecked = regRole === r.id;
                     return (
                       <button
-                        key={`${acc.role}-${acc.email}`}
+                        key={r.id}
                         type="button"
-                        onClick={() => handleSelectDemo(acc)}
-                        className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
-                          isSelected
-                            ? `${acc.color} ${acc.activeRing} shadow-md`
-                            : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200 hover:bg-slate-900/60'
+                        onClick={() => setRegRole(r.id)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          isChecked
+                            ? 'border-emerald-500 bg-emerald-500/10 text-white ring-1 ring-emerald-500'
+                            : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700'
                         }`}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center shrink-0 border border-slate-800">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-xs font-bold block truncate text-slate-100">{acc.title}</span>
-                          <span className="text-[10px] font-mono text-slate-400 block truncate">{acc.badge}</span>
-                        </div>
+                        <Icon className={`w-4 h-4 mb-1.5 ${isChecked ? 'text-emerald-400' : 'text-slate-400'}`} />
+                        <span className="block text-xs font-bold text-white">{r.label}</span>
+                        <span className="block text-[10px] text-slate-400 leading-tight">{r.desc}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Login Form */}
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              {/* Department (Optional for Operator) */}
+              {regRole === 'OPERATOR' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Corporate Email ID
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                    Department (Optional)
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                      <Mail className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. operator04@industrial.com"
-                      className="block w-full pl-9 pr-3 py-2.5 bg-slate-950/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={regDepartment}
+                    onChange={(e) => setRegDepartment(e.target.value)}
+                    placeholder="e.g. Hazardous Materials / Refinery Unit 4"
+                    className="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Security Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                      <Lock className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="block w-full pl-9 pr-3 py-2.5 bg-slate-950/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-500 hover:from-emerald-400 hover:to-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] disabled:opacity-50"
+                  disabled={regLoading}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-950 disabled:opacity-50"
                 >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Verifying Security Clearance...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Authorize & Enter Station</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+                  {regLoading ? 'Registering...' : 'Complete Sign Up'}
                 </button>
-              </form>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-              {/* Bottom Security Assurance */}
-              <div className="mt-5 pt-4 border-t border-slate-800 text-center">
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-mono">
-                  <ShieldAlert className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>IMMUTABLE AUDIT LOGGING ACTIVE &bull; WASTE-IQ PROTOCOL</span>
+      {/* ========================================================================= */}
+      {/* 6. FORGOT PASSWORD MODAL */}
+      {/* ========================================================================= */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/40">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Reset Password</h3>
+                  <p className="text-xs text-slate-400">Direct Database Password Update</p>
                 </div>
               </div>
-
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          </div>
 
+            {/* Error Message */}
+            {forgotError && (
+              <div className="mb-4 bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs rounded-xl p-3 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{forgotError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleForgotSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  User ID or Registered Email *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={forgotUserId}
+                  onChange={(e) => setForgotUserId(e.target.value)}
+                  placeholder="e.g. admin or operator04 or email"
+                  className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  New Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={forgotNewPassword}
+                  onChange={(e) => setForgotNewPassword(e.target.value)}
+                  placeholder="Min 6 characters"
+                  className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  Confirm New Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={forgotConfirmPassword}
+                  onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="block w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 active:bg-amber-700 transition-all flex items-center gap-2 shadow-lg shadow-amber-950 disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 };

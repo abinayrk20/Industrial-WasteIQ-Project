@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Public Pages
 import Login from './pages/Login';
+import Register from './pages/Register';
 import AccessDenied from './pages/AccessDenied';
 
 // Admin Pages
@@ -29,23 +30,24 @@ function App() {
   const { user, getDashboardPath } = useAuth();
 
   return (
-    <div className="relative min-h-screen bg-[#080d1a] text-slate-100 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Global Cinematic Industrial Refinery Ambient Background */}
+    <div className="relative min-h-screen bg-[#030806] text-[#F4FFF7] font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Global Futuristic Industrial WasteIQ 3D Eco-Tech Ambient Background */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <img
-          src="/industrial-refinery.jpg"
-          alt="Waste-IQ Industrial Refinery Complex"
-          className="w-full h-full object-cover object-center filter brightness-[0.25] contrast-125"
+          src="/industrial-wasteiq-hero.jpg"
+          alt="Industrial WasteIQ Eco-Tech Background"
+          className="w-full h-full object-cover object-center filter brightness-[0.3] contrast-125"
         />
         {/* Dark Obsidian Gradient Vignette for perfect text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#080d1a]/85 via-[#080d1a]/80 to-[#080d1a]/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:32px_32px] opacity-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030806]/90 via-[#030806]/80 to-[#030806]/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(#39FF78_1px,transparent_1px)] [background-size:32px_32px] opacity-10" />
       </div>
 
       <div className="relative z-10 min-h-screen">
         <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/access-denied" element={<AccessDenied />} />
 
       {/* ---------------- 1. ADMIN ROUTES ---------------- */}

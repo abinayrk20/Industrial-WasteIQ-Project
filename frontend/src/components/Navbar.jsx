@@ -7,7 +7,8 @@ import {
   Eye,
   LogOut,
   Download,
-  ShieldAlert
+  ShieldAlert,
+  User as UserIcon
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -19,15 +20,16 @@ const Navbar = () => {
         return {
           icon: ShieldCheck,
           label: 'ADMINISTRATOR',
-          className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+          className: 'bg-emerald-500/10 text-[#39FF78] border-[#39FF78]/40 shadow-[0_0_10px_rgba(57,255,120,0.2)]',
         };
       case 'OPERATOR':
         return {
           icon: HardHat,
           label: 'OPERATOR',
-          className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+          className: 'bg-[#00A86B]/15 text-[#39FF78] border-[#00A86B]/40',
         };
       case 'CLIENT_VIEWER':
+      case 'CLIENT':
         return {
           icon: Eye,
           label: 'CLIENT (READ ONLY)',
@@ -46,23 +48,23 @@ const Navbar = () => {
   const BadgeIcon = badge.icon;
 
   return (
-    <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800/90 sticky top-0 z-30 px-6 py-2.5 shadow-xl text-slate-100 font-['Plus_Jakarta_Sans',sans-serif]">
+    <header className="bg-[#0B1210]/95 backdrop-blur-xl border-b border-[#39FF78]/20 sticky top-0 z-30 px-6 py-3 shadow-xl text-[#F4FFF7] font-['Plus_Jakarta_Sans',sans-serif]">
       <div className="flex items-center justify-between">
         {/* Waste-IQ Brand Logo */}
         <div className="flex items-center gap-4">
           <WasteIQLogo size="sm" />
-          <span className="hidden md:inline-block text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-slate-800 text-emerald-400 border border-slate-700">
-            RBAC v2.4
+          <span className="hidden md:inline-block text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-[#063D28]/60 text-[#39FF78] border border-[#39FF78]/30">
+            PROD v2.4
           </span>
         </div>
 
         {/* User Identity & Actions */}
         <div className="flex items-center gap-3 sm:gap-4">
-
+          
           {/* Operator ID Badge if Operator */}
           {user?.operator_id && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full font-mono text-xs font-bold shadow-xs">
-              <HardHat className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#063D28]/70 text-[#39FF78] border border-[#39FF78]/40 rounded-full font-mono text-xs font-bold shadow-[0_0_10px_rgba(57,255,120,0.2)]">
+              <HardHat className="w-3.5 h-3.5 text-[#39FF78]" />
               <span>{user.operator_id}</span>
             </div>
           )}
@@ -73,13 +75,13 @@ const Navbar = () => {
             <span>{badge.label}</span>
           </div>
 
-          {/* Quick Direct Download Project Button */}
+          {/* Direct Download Project ZIP Button */}
           <a
-            href="https://github.com/abinayrk20/Industrial-WasteIQ-Project/archive/refs/heads/main.zip"
+            href="/download/"
             target="_blank"
             rel="noopener noreferrer"
             title="Download complete Project ZIP"
-            className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-1.5 rounded-xl transition-all shadow-xs"
+            className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-[#39FF78] hover:text-white bg-[#063D28]/40 hover:bg-[#063D28]/80 border border-[#39FF78]/30 px-2.5 py-1.5 rounded-xl transition-all shadow-xs"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Project ZIP</span>
@@ -88,8 +90,10 @@ const Navbar = () => {
           {/* Profile Details */}
           <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
             <div className="text-right hidden md:block">
-              <span className="text-xs font-bold text-slate-200 block leading-tight">{user?.name}</span>
-              <span className="text-[10px] text-slate-400 font-mono block">{user?.email}</span>
+              <span className="text-xs font-bold text-[#F4FFF7] block leading-tight">{user?.name}</span>
+              <span className="text-[10px] text-[#8FA89B] font-mono block">
+                {user?.username ? `@${user.username}` : user?.email}
+              </span>
             </div>
 
             <button

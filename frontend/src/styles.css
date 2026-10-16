@@ -4,77 +4,106 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen selection:bg-emerald-500 selection:text-slate-950;
+    @apply antialiased min-h-screen;
+    background-color: #030806;
+    color: #F4FFF7;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: #080d1a;
+    selection-background-color: #39FF78;
+    selection-color: #030806;
   }
 }
 
-/* Make page wrappers transparent so the industrial refinery background shows through */
-.bg-slate-50 {
+/* Glassmorphic Ambient Overlays */
+.bg-slate-50, .bg-slate-100 {
   background-color: transparent !important;
 }
 
-/* Glassmorphic Frosted Industrial Cards */
+/* Dark Futuristic Glass Card Components */
 .bg-white {
-  background-color: rgba(15, 23, 42, 0.78) !important;
+  background-color: rgba(11, 18, 16, 0.82) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  color: #f1f5f9;
-  border-color: rgba(51, 65, 85, 0.55) !important;
+  color: #F4FFF7 !important;
+  border-color: rgba(57, 255, 120, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.65);
 }
 
-.border-slate-200, .border-slate-100, .border-slate-300 {
-  border-color: rgba(51, 65, 85, 0.55) !important;
+.border-slate-200, .border-slate-100, .border-slate-300, .border-slate-700, .border-slate-800 {
+  border-color: rgba(57, 255, 120, 0.15) !important;
 }
 
-.text-slate-900, .text-slate-800 {
-  color: #f8fafc !important;
+.text-slate-900, .text-slate-800, .text-slate-100 {
+  color: #F4FFF7 !important;
 }
 
-.text-slate-700, .text-slate-600 {
-  color: #cbd5e1 !important;
+.text-slate-700, .text-slate-600, .text-slate-400 {
+  color: #8FA89B !important;
 }
 
 .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #5E7A6D !important;
 }
 
-.bg-slate-100 {
-  background-color: rgba(30, 41, 59, 0.75) !important;
-}
-
+/* Tables in Dark Glass */
 table thead th {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  color: #94a3b8 !important;
+  background-color: rgba(6, 61, 40, 0.45) !important;
+  color: #39FF78 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+table tbody tr {
+  border-bottom: 1px solid rgba(57, 255, 120, 0.1) !important;
+  transition: all 0.2s ease;
 }
 
 table tbody tr:hover {
-  background-color: rgba(30, 41, 59, 0.6) !important;
+  background-color: rgba(57, 255, 120, 0.06) !important;
 }
 
+/* Inputs, selects, and textareas */
 input, select, textarea {
-  background-color: rgba(9, 14, 26, 0.9) !important;
-  color: #f8fafc !important;
-  border-color: #334155 !important;
+  background-color: rgba(3, 8, 6, 0.85) !important;
+  color: #F4FFF7 !important;
+  border-color: rgba(57, 255, 120, 0.25) !important;
+  transition: all 0.2s ease;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #10b981 !important;
+  border-color: #39FF78 !important;
+  box-shadow: 0 0 15px rgba(57, 255, 120, 0.3) !important;
+  outline: none !important;
 }
 
-/* Industrial High-Tech Scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #090e17;
+  background: #030806;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #063D28;
   border-radius: 4px;
+  border: 1px solid rgba(57, 255, 120, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #00A86B;
+}
+
+/* Keyframe animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(57, 255, 120, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(57, 255, 120, 0.6);
+  }
+}
+
+.glow-pulse {
+  animation: pulseGlow 3s infinite ease-in-out;
 }

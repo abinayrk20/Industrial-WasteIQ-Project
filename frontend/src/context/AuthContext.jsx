@@ -28,14 +28,22 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const data = await authApi.login(email, password);
+  const login = async (userIdOrEmail, password) => {
+    const data = await authApi.login(userIdOrEmail, password);
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
     localStorage.setItem('user_profile', JSON.stringify(data.user));
     localStorage.setItem('user_role', data.user.role);
     setUser(data.user);
     return data.user;
+  };
+
+  const register = async (userData) => {
+    return await authApi.register(userData);
+  };
+
+  const forgotPassword = async (userIdOrEmail, newPassword) => {
+    return await authApi.forgotPassword(userIdOrEmail, newPassword);
   };
 
   const logout = () => {
@@ -47,12 +55,12 @@ export const AuthProvider = ({ children }) => {
   const getDashboardPath = (role) => {
     if (role === 'ADMIN') return '/admin/dashboard';
     if (role === 'OPERATOR') return '/operator/dashboard';
-    if (role === 'CLIENT_VIEWER') return '/client/dashboard';
+    if (role === 'CLIENT_VIEWER' || role === 'CLIENT') return '/client/dashboard';
     return '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, getDashboardPath }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, forgotPassword, getDashboardPath }}>
       {children}
     </AuthContext.Provider>
   );

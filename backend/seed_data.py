@@ -1,6 +1,7 @@
 import os
 import django
 from datetime import timedelta
+from django.conf import settings
 from django.utils import timezone
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -17,48 +18,82 @@ from core.models import (
     AuditLog
 )
 
+def _get_seed_user(email, username, name, role, password_env, *, is_staff=False, is_superuser=False):
+    user = User.objects.filter(email=email).first()
+    if user:
+        return user
+
+    password = os.environ.get(password_env)
+    if not password:
+        raise RuntimeError(f'{password_env} is required to create the sample user {email}.')
+
+    return User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        name=name,
+        role=role,
+        status='ACTIVE',
+        is_staff=is_staff,
+        is_superuser=is_superuser,
+    )
+
+
 def run_seed():
+    if not settings.DEBUG and os.environ.get('SEED_SAMPLE_DATA', '').lower() != 'true':
+        raise RuntimeError(
+            'Refusing to seed a production database. Set SEED_SAMPLE_DATA=true only when intentionally provisioning sample data.'
+        )
+
     print("[*] Starting Industrial Project Management RBAC Seeder...")
 
-    # 1. ADMIN USER
-    admin_user, created = User.objects.get_or_create(email='admin@industrial.com')
-    admin_user.username = 'admin'
-    admin_user.name = 'Marcus Vance (Executive Director)'
-    admin_user.role = 'ADMIN'
-    admin_user.status = 'ACTIVE'
-    admin_user.is_staff = True
-    admin_user.is_superuser = True
-    admin_user.set_password('Admin@12345')
-    admin_user.save()
-    print("[+] Admin User: admin@industrial.com / Admin@12345")
+    seed_users = (
+        ('admin@industrial.com', 'SEED_ADMIN_PASSWORD'),
+        ('client@industrial.com', 'SEED_CLIENT_PASSWORD'),
+        ('operator01@industrial.com', 'SEED_OPERATOR01_PASSWORD'),
+        ('operator02@industrial.com', 'SEED_OPERATOR02_PASSWORD'),
+    )
+    missing_passwords = [
+        password_env
+        for email, password_env in seed_users
+        if not User.objects.filter(email=email).exists() and not os.environ.get(password_env)
+    ]
+    if missing_passwords:
+        raise RuntimeError(
+            'Set these environment variables before creating sample users: '
+            + ', '.join(missing_passwords)
+        )
 
-    # 2. CLIENT VIEWER USER
-    client_user, created = User.objects.get_or_create(email='client@industrial.com')
-    client_user.username = 'client'
-    client_user.name = 'Apex Global Energy Ltd. (Client Representative)'
-    client_user.role = 'CLIENT_VIEWER'
-    client_user.status = 'ACTIVE'
-    client_user.set_password('Client@12345')
-    client_user.save()
-    print("[+] Client Viewer User: client@industrial.com / Client@12345")
-
-    # 3. OPERATOR USER 1
-    op1_user, created = User.objects.get_or_create(email='operator01@industrial.com')
-    op1_user.username = 'operator01'
-    op1_user.name = 'David Chen'
-    op1_user.role = 'OPERATOR'
-    op1_user.status = 'ACTIVE'
-    op1_user.set_password('Operator@12345')
-    op1_user.save()
-
-    # 4. OPERATOR USER 2
-    op2_user, created = User.objects.get_or_create(email='operator02@industrial.com')
-    op2_user.username = 'operator02'
-    op2_user.name = 'Elena Rostova'
-    op2_user.role = 'OPERATOR'
-    op2_user.status = 'ACTIVE'
-    op2_user.set_password('Operator@12345')
-    op2_user.save()
+    admin_user = _get_seed_user(
+        'admin@industrial.com',
+        'admin',
+        'Marcus Vance (Executive Director)',
+        'ADMIN',
+        'SEED_ADMIN_PASSWORD',
+        is_staff=True,
+        is_superuser=True,
+    )
+    client_user = _get_seed_user(
+        'client@industrial.com',
+        'client',
+        'Apex Global Energy Ltd. (Client Representative)',
+        'CLIENT_VIEWER',
+        'SEED_CLIENT_PASSWORD',
+    )
+    op1_user = _get_seed_user(
+        'operator01@industrial.com',
+        'operator01',
+        'David Chen',
+        'OPERATOR',
+        'SEED_OPERATOR01_PASSWORD',
+    )
+    op2_user = _get_seed_user(
+        'operator02@industrial.com',
+        'operator02',
+        'Elena Rostova',
+        'OPERATOR',
+        'SEED_OPERATOR02_PASSWORD',
+    )
 
     # 5. PROJECTS
     p1, _ = Project.objects.get_or_create(
@@ -291,13 +326,7 @@ def run_seed():
     )
 
     print("\n[OK] Database seeding completed successfully!")
-    print("---------------------------------------------------------------")
-    print("DEMO CREDENTIALS:")
-    print("  ADMIN:         admin@industrial.com        / Admin@12345")
-    print("  OPERATOR:      operator01@industrial.com   / Operator@12345")
-    print("  OPERATOR 2:    operator02@industrial.com   / Operator@12345")
-    print("  CLIENT VIEWER: client@industrial.com       / Client@12345")
-    print("---------------------------------------------------------------")
+    print("Sample users were created only when absent; existing users and passwords were left unchanged.")
 
 if __name__ == '__main__':
     run_seed()

@@ -33,16 +33,11 @@ A mission-critical Industrial Project Management System engineered with strict *
 
 ---
 
-## 🔑 Demo Access Credentials
+## Account provisioning
 
-The database has been pre-seeded with active operational data:
-
-| Role | Email | Password | Identifier / Site |
-| :--- | :--- | :--- | :--- |
-| **ADMIN** | `admin@industrial.com` | `Admin@12345` | Master Operations Console |
-| **OPERATOR 1** | `operator01@industrial.com` | `Operator@12345` | `IND-OP-0001` (David Chen) &bull; Offshore Turbine Array |
-| **OPERATOR 2** | `operator02@industrial.com` | `Operator@12345` | `IND-OP-0002` (Elena Rostova) &bull; Bio-Polymer Plant |
-| **CLIENT VIEWER** | `client@industrial.com` | `Client@12345` | Apex Global Energy Ltd. &bull; Stakeholder Portal |
+Login uses accounts in the backend's configured database. No production
+credentials are included in the frontend or documentation. Existing users are
+not created or changed automatically during deployment.
 
 ---
 
@@ -53,11 +48,23 @@ The database has been pre-seeded with active operational data:
 cd backend
 python -m venv venv
 venv\Scripts\activate
+Copy-Item .env.example .env
 pip install -r requirements.txt
 python manage.py migrate
-python seed_data.py   # Seeds users, operators, projects, tasks, audit logs
+python manage.py test core
 python manage.py runserver 127.0.0.1:8000
 ```
+
+Before starting Django, replace the development `SECRET_KEY` placeholder in
+`backend/.env` with a random local value. Generate one with
+`python -c "import secrets; print(secrets.token_urlsafe(64))"`. Keep `.env`
+private; it is ignored by Git.
+
+To populate a development database with sample records, set the four
+`SEED_*_PASSWORD` values in `backend/.env` and run `python seed_data.py`.
+The seeder only creates sample users that do not already exist and never
+changes an existing user's password. It refuses to run in production unless
+`SEED_SAMPLE_DATA=true` is deliberately set.
 
 ### Connecting the backend to Supabase
 
@@ -70,9 +77,9 @@ session-pooler URI supported by your hosting network; the backend requires SSL.
 Keep the database password private and do not commit `.env`.
 
 When `DATABASE_URL` is configured, run `python manage.py migrate` from
-`backend` to create the Django tables in Supabase. To populate a new database
-with the demo users and sample data, run `python seed_data.py` once. Without
-`DATABASE_URL`, local development continues to use `backend/db.sqlite3`.
+`backend` to create or update the Django tables in Supabase. Production refuses
+to start without `DATABASE_URL`; SQLite is used only for local development.
+Migrations do not delete existing user records.
 
 ### Frontend (React + Vite + Tailwind CSS + Lucide Icons + Recharts)
 ```bash
@@ -86,22 +93,35 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 ### Deploying the frontend to Vercel
 
-For this repository layout, set Vercel's **Root Directory** to
-`Industrial-Project-Management/frontend`, with the build command `npm run build`
-and output directory `dist`. The `frontend/vercel.json` rewrite sends direct
+Set Vercel's **Root Directory** to `frontend`, with the build command
+`npm run build` and output directory `dist`. Set the Vercel environment variable
+`VITE_API_BASE_URL` to `https://industrial-wasteiq-project.onrender.com/api`
+for Production (and Preview if needed), then redeploy. This is a public API URL,
+not a secret. The production build also has this URL as its safe default.
+The `frontend/vercel.json` rewrite sends direct
 requests for client-side routes back to `index.html`, where React Router can
 render the requested page.
 
-Vercel deploys this frontend separately from Django. The frontend currently
-requests the API at `/api`, so deploy/configure the Django backend at that same
-origin or provide a proxy to it; the SPA rewrite is not an API deployment.
+Vercel deploys this frontend separately from Django. The frontend sends API
+requests directly to the Render backend; the SPA rewrite is not an API proxy.
+
+### Render backend environment
+
+In the Render web service, set `DEBUG=false`, a newly generated `SECRET_KEY`,
+`DATABASE_URL` to the Supabase PostgreSQL connection URI, and `ALLOWED_HOSTS`
+to the Render hostname. Set `CORS_ALLOWED_ORIGINS` and
+`CSRF_TRUSTED_ORIGINS` to `https://industrial-waste-iq-project.vercel.app`.
+Do not put database credentials or the Django secret in Vercel variables or
+frontend files. Deploy the backend, then run `python manage.py migrate` in the
+Render Shell before testing login. The login endpoint is
+`POST /api/auth/login/`; the current-user endpoint is `GET /api/auth/me/`.
 
 ---
 
-## 🧪 Automated RBAC Test Suite
-Run the comprehensive test suite verifying all 3 user roles, permission restrictions, and audit logging:
+## Authentication tests
+
+Run the backend authentication tests from the backend directory:
+
 ```bash
-cd backend
-python ..\..\brain\<conversation-id>\scratch\test_rbac_e2e.py
+python manage.py test core
 ```
-Outputs complete status logs verifying 100% RBAC policy adherence across all endpoints.

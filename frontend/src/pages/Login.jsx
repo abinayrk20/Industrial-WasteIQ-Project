@@ -15,10 +15,7 @@ import {
   Eye as ClientEye,
   KeyRound,
   UserPlus,
-  X,
-  Sparkles,
-  ChevronDown,
-  ChevronUp
+  X
 } from 'lucide-react';
 
 const Login = () => {
@@ -36,7 +33,6 @@ const Login = () => {
   // Modals
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [showDemoDrawer, setShowDemoDrawer] = useState(false);
 
   // Register Form States
   const [regFullName, setRegFullName] = useState('');
@@ -55,37 +51,6 @@ const Login = () => {
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
-
-  // Demo Accounts Quick Reference
-  const demoAccounts = [
-    {
-      role: 'ADMIN',
-      title: 'Administrator',
-      userId: 'admin',
-      password: 'Admin@12345',
-      icon: ShieldCheck,
-      badge: 'Level 3 Governance',
-      color: 'border-indigo-500/40 text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20',
-    },
-    {
-      role: 'OPERATOR',
-      title: 'Abinaya',
-      userId: 'operator04',
-      password: 'Operator@12345',
-      icon: HardHat,
-      badge: 'IND-OP-0004 Certified',
-      color: 'border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20',
-    },
-    {
-      role: 'CLIENT_VIEWER',
-      title: 'Client Stakeholder',
-      userId: 'client',
-      password: 'Client@12345',
-      icon: ClientEye,
-      badge: 'View-Only Audits',
-      color: 'border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20',
-    },
-  ];
 
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
@@ -108,10 +73,15 @@ const Login = () => {
       const redirectPath = getDashboardPath(user.role);
       navigate(redirectPath);
     } catch (err) {
+      const detail = err.response?.data?.detail || err.response?.data?.non_field_errors?.[0];
       setError(
-        err.response?.data?.detail ||
-        err.response?.data?.non_field_errors?.[0] ||
-        'Authentication failed. Invalid User ID or Password. Please check your credentials.'
+        typeof detail === 'string'
+          ? detail
+          : !err.response
+            ? 'Cannot reach the login server. Check your connection and try again.'
+            : err.response.status >= 500
+              ? 'The login service is temporarily unavailable. Please try again later.'
+              : 'Login failed. Check your User ID or email and password.'
       );
     } finally {
       setLoading(false);
@@ -211,14 +181,6 @@ const Login = () => {
     } finally {
       setForgotLoading(false);
     }
-  };
-
-  // Quick fill from demo account
-  const handleSelectDemo = (acc) => {
-    setUserId(acc.userId);
-    setPassword(acc.password);
-    setError('');
-    setSuccessMsg('');
   };
 
   return (
@@ -367,46 +329,6 @@ const Login = () => {
             )}
           </button>
         </form>
-
-        {/* 4. Collapsible Demo Credentials Helper */}
-        <div className="mt-6 pt-4 border-t border-slate-800/80">
-          <button
-            type="button"
-            onClick={() => setShowDemoDrawer(!showDemoDrawer)}
-            className="w-full flex items-center justify-between text-[11px] font-mono text-slate-400 hover:text-slate-300 transition-colors p-1"
-          >
-            <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-slate-400">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Demo Accounts (Click to Fill)
-            </span>
-            {showDemoDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-
-          {showDemoDrawer && (
-            <div className="grid grid-cols-3 gap-2 mt-3 animate-fadeIn">
-              {demoAccounts.map((acc) => {
-                const Icon = acc.icon;
-                const isSelected = userId === acc.userId;
-                return (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => handleSelectDemo(acc)}
-                    className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                      isSelected
-                        ? `${acc.color} ring-1 ring-emerald-500/60 shadow-md`
-                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mb-1" />
-                    <span className="text-[11px] font-bold block leading-tight text-white">{acc.title}</span>
-                    <span className="text-[9px] text-slate-400 font-mono mt-0.5">{acc.userId}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
       </div>
 

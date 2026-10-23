@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
@@ -20,6 +21,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        identifier = attrs.get(self.username_field)
+        if identifier:
+            matching_users = list(
+                User.objects.filter(
+                    Q(email__iexact=identifier.strip())
+                    | Q(username__iexact=identifier.strip())
+                    | Q(operator_profile__operator_id__iexact=identifier.strip())
+                ).distinct()[:2]
+            )
+            if len(matching_users) == 1:
+                attrs[self.username_field] = matching_users[0].email
+
         data = super().validate(attrs)
         
         # Check active status

@@ -36,7 +36,7 @@ const AdminOperators = () => {
     department: 'Waste Sorting & Segregation',
     project: '',
     shift: 'Morning',
-    password: 'Operator@12345',
+    password: '',
   });
 
   useEffect(() => {
@@ -74,7 +74,7 @@ const AdminOperators = () => {
         department: 'Waste Sorting & Segregation',
         project: '',
         shift: 'Morning',
-        password: 'Operator@12345',
+        password: '',
       });
       await loadData();
     } catch (err) {
@@ -330,9 +330,11 @@ const AdminOperators = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-300 uppercase mb-1">Default Password</label>
+                    <label className="block font-bold text-slate-300 uppercase mb-1">Initial Password</label>
                     <input
-                      type="text"
+                      type="password"
+                      required
+                      minLength={8}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-[#030806] border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#39FF78]"

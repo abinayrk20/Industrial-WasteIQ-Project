@@ -1,15 +1,36 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = 'django-insecure-industrial-rbac-security-key-2026-strict-auth'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+DEBUG = os.environ.get('DEBUG', 'false').strip().lower() in {'1', 'true', 'yes'}
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('SECRET_KEY must be set when DEBUG is disabled.')
+    SECRET_KEY = 'django-insecure-local-development-only'
+
+
+def _environment_list(name, default):
+    return [
+        value.strip()
+        for value in os.environ.get(name, default).split(',')
+        if value.strip()
+    ]
+
+
+ALLOWED_HOSTS = _environment_list(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,industrial-wasteiq-project.onrender.com',
+)
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_hostname and render_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_hostname)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -70,13 +91,17 @@ if DATABASE_URL:
             ssl_require=True,
         )
     }
-else:
+elif DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+else:
+    raise ImproperlyConfigured(
+        'DATABASE_URL must be set when DEBUG is disabled; refusing to use SQLite in production.'
+    )
 
 AUTH_USER_MODEL = 'core.User'
 
@@ -120,5 +145,16 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = _environment_list(
+    'CORS_ALLOWED_ORIGINS',
+    'https://industrial-waste-iq-project.vercel.app,http://localhost:5173,http://127.0.0.1:5173',
+)
+CSRF_TRUSTED_ORIGINS = _environment_list(
+    'CSRF_TRUSTED_ORIGINS',
+    ','.join(CORS_ALLOWED_ORIGINS),
+)
+CORS_ALLOW_CREDENTIALS = False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG

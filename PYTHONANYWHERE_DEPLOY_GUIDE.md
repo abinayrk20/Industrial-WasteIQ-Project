@@ -7,7 +7,7 @@ This guide walks you through deploying the **Industrial Project Management Syste
 ## 📦 What is already prepared for you:
 1. **Frontend Production Build**: Pre-compiled React + Vite bundle in `frontend/dist/`.
 2. **Unified Django Engine**: Django is configured with `WhiteNoise` to serve both the React frontend and the REST API from a single host under `https://<your-username>.pythonanywhere.com`.
-3. **Database Pre-Seeded**: `db.sqlite3` with admin, operators, client viewer, projects, and tasks is already seeded.
+3. **Database**: configure your own database and create users with unique passwords before deployment. Do not rely on a committed SQLite database or shared demo credentials.
 4. **Deployable Zip File**: A complete lightweight package is ready at:
    `C:\Users\Dell\.gemini\antigravity\scratch\Industrial-Project-Management-Deploy.zip` (1.4 MB)
 
@@ -92,7 +92,8 @@ Add these two mappings under **Static files**:
 
 ---
 
-## 🔑 Login Accounts (Pre-Seeded)
-- **Admin**: `admin@industrial.com` / `Admin@12345`
-- **Operator**: `operator01@industrial.com` / `Operator@12345`
-- **Client Viewer**: `client@industrial.com` / `Client@12345`
+## Login accounts
+
+The deployed database determines which accounts can sign in. No shared
+credentials are published in this guide. Provision users securely in your
+configured database and never reuse development passwords in production.

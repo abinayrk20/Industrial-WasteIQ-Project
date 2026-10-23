@@ -1,35 +1,39 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../services/api';
+import { authApi, clearAuthData } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const cached = localStorage.getItem('user_profile');
-    return cached ? JSON.parse(cached) : null;
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (accessToken || refreshToken) {
       authApi.getCurrentUser()
         .then((userData) => {
           setUser(userData);
           localStorage.setItem('user_profile', JSON.stringify(userData));
         })
         .catch(() => {
-          localStorage.clear();
+          clearAuthData();
           setUser(null);
         })
         .finally(() => setLoading(false));
     } else {
+      clearAuthData();
       setLoading(false);
     }
   }, []);
 
   const login = async (userIdOrEmail, password) => {
     const data = await authApi.login(userIdOrEmail, password);
+    const allowedRoles = ['ADMIN', 'OPERATOR', 'CLIENT_VIEWER'];
+    if (!data?.access || !data?.refresh || !data?.user || !allowedRoles.includes(data.user.role)) {
+      throw new Error('The login service returned an incomplete or unsupported user session.');
+    }
+
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
     localStorage.setItem('user_profile', JSON.stringify(data.user));
@@ -47,9 +51,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.clear();
+    clearAuthData();
     setUser(null);
-    window.location.href = '/login';
+    window.location.assign('/login');
   };
 
   const getDashboardPath = (role) => {

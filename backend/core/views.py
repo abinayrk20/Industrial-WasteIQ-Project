@@ -105,7 +105,7 @@ class AdminOperatorListCreateView(views.APIView):
         data = request.data
         email = data.get('email')
         name = data.get('name')
-        password = data.get('password', 'Operator@12345')
+        password = data.get('password')
         employee_id = data.get('employee_id')
         department = data.get('department', 'General Operations')
         project_id = data.get('project')
@@ -114,6 +114,12 @@ class AdminOperatorListCreateView(views.APIView):
         if not email or not name or not employee_id:
             return Response(
                 {"error": "Name, email, and employee ID are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not isinstance(password, str) or len(password) < 8:
+            return Response(
+                {"error": "An initial password of at least 8 characters is required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

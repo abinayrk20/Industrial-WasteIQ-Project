@@ -1,16 +1,17 @@
 import axios from 'axios';
 
-// Detect API base URL: Reads VITE_API_URL if deployed on Vercel/Netlify, falls back to '/api' for local dev
 const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl || envUrl.trim() === '') {
-    return '/api';
-  }
-  const cleanUrl = envUrl.trim().replace(/\/+$/, '');
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  const fallbackUrl = import.meta.env.PROD
+    ? 'https://industrial-wasteiq-project.onrender.com/api'
+    : '/api';
+  const cleanUrl = (envUrl || fallbackUrl).trim().replace(/\/+$/, '');
   return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
 };
 
 const API_BASE_URL = getApiBaseUrl();
+const AUTH_STORAGE_KEYS = ['access_token', 'refresh_token', 'user_profile', 'user_role'];
+let refreshPromise = null;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,6 +19,17 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const clearAuthData = () => {
+  AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+};
 
 // Interceptor to inject JWT Bearer Token
 api.interceptors.request.use(
@@ -34,14 +46,60 @@ api.interceptors.request.use(
 // Interceptor to handle expired tokens and security denials
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.clear();
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+  async (error) => {
+    const request = error.config;
+    const isAuthEndpoint = /\/auth\/(login|refresh)\/?$/.test(request?.url || '');
+
+    if (error.response?.status !== 401 || !request || request._retry || isAuthEndpoint) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      clearAuthData();
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
+      return Promise.reject(error);
+    }
+
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken && request.headers?.Authorization !== `Bearer ${accessToken}`) {
+      request.headers.Authorization = `Bearer ${accessToken}`;
+      return api(request);
+    }
+
+    request._retry = true;
+    try {
+      if (!refreshPromise) {
+        refreshPromise = refreshClient
+          .post('/auth/refresh/', { refresh: refreshToken })
+          .then((response) => {
+            const { access, refresh } = response.data;
+            if (!access) {
+              throw new Error('The token refresh endpoint did not return an access token.');
+            }
+            localStorage.setItem('access_token', access);
+            if (refresh) {
+              localStorage.setItem('refresh_token', refresh);
+            }
+            return access;
+          })
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
+      const newAccessToken = await refreshPromise;
+      request.headers.Authorization = `Bearer ${newAccessToken}`;
+      return api(request);
+    } catch (refreshError) {
+      clearAuthData();
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
+      return Promise.reject(refreshError);
+    }
   }
 );
 
@@ -49,9 +107,8 @@ api.interceptors.response.use(
 export const authApi = {
   login: async (userIdOrEmail, password) => {
     const response = await api.post('/auth/login/', {
-      user_id: userIdOrEmail,
       email: userIdOrEmail,
-      password: password,
+      password,
     });
     return response.data;
   },

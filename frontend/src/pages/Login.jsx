@@ -97,8 +97,8 @@ const Login = () => {
       setRegError('All fields are required.');
       return;
     }
-    if (regPassword.length < 6) {
-      setRegError('Password must be at least 6 characters.');
+    if (regPassword.length < 8) {
+      setRegError('Password must be at least 8 characters.');
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -109,19 +109,19 @@ const Login = () => {
     setRegLoading(true);
     try {
       await register({
-        user_id: regUserId.trim(),
+        username: regUserId.trim(),
         name: regFullName.trim(),
         email: regEmail.trim(),
         password: regPassword,
+        confirm_password: regConfirmPassword,
         role: regRole,
-        department: regDepartment.trim() || 'Waste-IQ Operations'
+        department: regDepartment.trim(),
       });
 
-      // Populate login User ID and close modal
-      setUserId(regUserId.trim());
+      setUserId(regEmail.trim());
       setPassword('');
       setShowRegisterModal(false);
-      setSuccessMsg(`Registration successful! User ID "${regUserId}" is ready. Enter your password to log in.`);
+      setSuccessMsg(`Registration successful! Account "${regEmail}" is ready. Enter your password to log in.`);
       setError('');
 
       // Reset reg form
@@ -132,11 +132,22 @@ const Login = () => {
       setRegConfirmPassword('');
       setRegDepartment('');
     } catch (err) {
-      const msg = err.response?.data?.user_id?.[0] ||
-        err.response?.data?.email?.[0] ||
-        err.response?.data?.detail ||
-        'Registration failed. Please check inputs and try again.';
-      setRegError(msg);
+      const status = err.response?.status;
+      const data = err.response?.data;
+      const fieldMessage = data && typeof data === 'object'
+        ? Object.values(data).find((value) => typeof value === 'string' || Array.isArray(value))
+        : null;
+      const message = Array.isArray(fieldMessage) ? fieldMessage[0] : fieldMessage;
+
+      if (!err.response) {
+        setRegError('Could not reach the registration service. Check the API URL, network, and CORS configuration.');
+      } else if (status === 404) {
+        setRegError('The registration endpoint was not found. Deploy the backend registration update and verify the API URL.');
+      } else if (status >= 500) {
+        setRegError('The backend could not complete registration. Check Render logs and the production database connection.');
+      } else {
+        setRegError(message || `Registration failed (HTTP ${status}). Please check the submitted information.`);
+      }
     } finally {
       setRegLoading(false);
     }
@@ -449,10 +460,9 @@ const Login = () => {
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
                   Select System Role *
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'OPERATOR', label: 'Operator', desc: 'Plant & Site Work', icon: HardHat },
-                    { id: 'ADMIN', label: 'Admin', desc: 'Full Governance', icon: ShieldCheck },
                     { id: 'CLIENT_VIEWER', label: 'Client', desc: 'View-Only Audits', icon: ClientEye },
                   ].map((r) => {
                     const Icon = r.icon;
@@ -475,6 +485,9 @@ const Login = () => {
                     );
                   })}
                 </div>
+                <p className="mt-2 text-[10px] text-slate-500">
+                  Admin accounts can only be created or approved by an authorized administrator.
+                </p>
               </div>
 
               {/* Department (Optional for Operator) */}

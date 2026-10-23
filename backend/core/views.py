@@ -1,6 +1,8 @@
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg
+from django.db import IntegrityError
 from rest_framework import generics, status, views, permissions
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -16,6 +18,7 @@ from .models import (
 )
 from .serializers import (
     UserSerializer,
+    PublicRegistrationSerializer,
     CustomTokenObtainPairSerializer,
     OperatorSerializer,
     ProjectSerializer,
@@ -37,6 +40,29 @@ from .permissions import (
 
 class CustomLoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class PublicRegistrationView(generics.CreateAPIView):
+    serializer_class = PublicRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = serializer.save()
+        except IntegrityError as exc:
+            raise ValidationError({
+                'detail': 'That username or email is already registered. Please sign in instead.'
+            }) from exc
+
+        return Response(
+            {
+                'message': 'Registration successful. You can now sign in.',
+                'user': UserSerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class CurrentUserView(views.APIView):

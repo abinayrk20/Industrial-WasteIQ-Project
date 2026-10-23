@@ -123,3 +123,123 @@ class AuthenticationTests(APITestCase):
         self.assertEqual(created_response.status_code, status.HTTP_201_CREATED)
         created_user = User.objects.get(email=operator_data['email'])
         self.assertTrue(created_user.check_password('Unique-Operator-Password-42'))
+
+
+class RegistrationTests(APITestCase):
+    def _register(self, **overrides):
+        registration_data = {
+            'username': 'new-operator',
+            'name': 'New Operator',
+            'email': 'new-operator@example.test',
+            'password': 'Unique-Registration-Password-42',
+            'confirm_password': 'Unique-Registration-Password-42',
+            'role': 'OPERATOR',
+            'department': 'Waste Processing',
+        }
+        registration_data.update(overrides)
+        return self.client.post(
+            '/api/auth/register/',
+            registration_data,
+            format='json',
+        )
+
+    def test_operator_registration_hashes_password_and_can_log_in(self):
+        response = self._register()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(email='new-operator@example.test')
+        self.assertEqual(user.username, 'new-operator')
+        self.assertEqual(user.role, 'OPERATOR')
+        self.assertTrue(user.check_password('Unique-Registration-Password-42'))
+        self.assertNotEqual(user.password, 'Unique-Registration-Password-42')
+        self.assertEqual(user.operator_profile.department, 'Waste Processing')
+        self.assertTrue(user.operator_profile.employee_id.startswith('REG-'))
+
+        login_response = self.client.post(
+            '/api/auth/login/',
+            {'email': user.email, 'password': 'Unique-Registration-Password-42'},
+            format='json',
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(login_response.data['user']['role'], 'OPERATOR')
+
+    def test_client_can_register_but_public_admin_registration_is_rejected(self):
+        client_response = self._register(
+            username='new-client',
+            name='New Client',
+            email='new-client@example.test',
+            role='CLIENT_VIEWER',
+            department='',
+        )
+        self.assertEqual(client_response.status_code, status.HTTP_201_CREATED)
+        client_user = User.objects.get(email='new-client@example.test')
+        self.assertEqual(client_user.role, 'CLIENT_VIEWER')
+        self.assertFalse(hasattr(client_user, 'operator_profile'))
+
+        admin_response = self._register(
+            username='new-admin',
+            email='new-admin@example.test',
+            role='ADMIN',
+        )
+        self.assertEqual(admin_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email='new-admin@example.test').exists())
+
+    def test_duplicate_username_and_email_return_field_errors(self):
+        User.objects.create_user(
+            username='taken-name',
+            email='taken@example.test',
+            password='Existing-Password-42',
+        )
+
+        duplicate_username = self._register(username='taken-name')
+        self.assertEqual(duplicate_username.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', duplicate_username.data)
+
+        duplicate_email = self._register(email='TAKEN@example.test')
+        self.assertEqual(duplicate_email.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('email', duplicate_email.data)
+
+    def test_required_fields_confirmation_and_password_validation(self):
+        missing_fields = self.client.post(
+            '/api/auth/register/',
+            {},
+            format='json',
+        )
+        self.assertEqual(missing_fields.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', missing_fields.data)
+        self.assertIn('email', missing_fields.data)
+        self.assertIn('password', missing_fields.data)
+
+        mismatch = self._register(confirm_password='different-password')
+        self.assertEqual(mismatch.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('confirm_password', mismatch.data)
+        self.assertFalse(User.objects.filter(username='new-operator').exists())
+
+        weak_password = self._register(
+            password='short',
+            confirm_password='short',
+        )
+        self.assertEqual(weak_password.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('password', weak_password.data)
+        self.assertFalse(User.objects.filter(username='new-operator').exists())
+
+    def test_registered_client_cannot_access_admin_endpoint(self):
+        response = self._register(
+            username='restricted-client',
+            email='restricted-client@example.test',
+            role='CLIENT_VIEWER',
+            department='',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username='restricted-client')
+        login = self.client.post(
+            '/api/auth/login/',
+            {'email': user.email, 'password': 'Unique-Registration-Password-42'},
+            format='json',
+        )
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {login.data['access']}"
+        )
+
+        admin_response = self.client.get('/api/admin/dashboard/')
+        self.assertEqual(admin_response.status_code, status.HTTP_403_FORBIDDEN)

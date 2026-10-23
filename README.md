@@ -39,6 +39,15 @@ Login uses accounts in the backend's configured database. No production
 credentials are included in the frontend or documentation. Existing users are
 not created or changed automatically during deployment.
 
+Public registration is available at `POST /api/auth/register/` for Operator
+and Client Viewer accounts. It validates unique usernames and email addresses,
+checks password confirmation and Django password validators, and hashes
+passwords using Django's `create_user`. The registration form cannot create
+Admin accounts; an authorized administrator must provision them. Operator
+accounts are created without a project assignment and must be assigned by an
+administrator before they can submit project records. Registration adds no
+database fields and requires no schema migration.
+
 ---
 
 ## 🚀 Running the Project
@@ -125,3 +134,7 @@ Run the backend authentication tests from the backend directory:
 ```bash
 python manage.py test core
 ```
+
+The suite covers public registration, password hashing and subsequent login,
+validation errors, rejection of public Admin creation, and role-protected
+endpoints.
